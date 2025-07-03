@@ -1,0 +1,10 @@
+[package]
+name = "wire"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+serde = { version = "1.0.219", features = ["derive"] }
+tabled = "0.20.0"
+toml = "0.8.23"
