@@ -1,3 +1,3 @@
-﻿# Wire
+﻿# Relayx
 
-Wire is a TCP client with interface highly inspired by Microsoft Telnet Client.
+Relayx is a TCP client with interface highly inspired by Microsoft Telnet Client.
