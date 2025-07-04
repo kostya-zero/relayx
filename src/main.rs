@@ -1,22 +1,17 @@
 use crate::config::{load_config, save_config, Config, ConfigOption};
-use crate::terminal::printerr;
+use crate::terminal::{printerr, printwarn};
 use std::io;
 use std::io::{Read, Write};
 use std::net::{Shutdown, SocketAddrV4, TcpStream};
 use std::process::exit;
 use std::time::Duration;
-use tabled::settings::object::{Columns, Rows};
-use tabled::settings::{Format, Modify, Remove, Style};
-use tabled::{Table, Tabled};
+use crate::tables::{print_table, TableEntry};
 
 mod config;
 mod terminal;
+mod tables;
 
-#[derive(Tabled)]
-struct TableEntry {
-    pub name: String,
-    pub description: String,
-}
+
 
 fn is_valid_address(s: &str) -> bool {
     s.parse::<SocketAddrV4>().is_ok()
@@ -29,11 +24,16 @@ fn sanitize_input(input: String) -> String {
 }
 
 fn main() {
-    println!("Wire TCP Client {}", env!("CARGO_PKG_VERSION"));
+    println!("Relayx TCP Client {}", env!("CARGO_PKG_VERSION"));
     println!("Enter ?/help to display help message.");
-    let mut connection = String::from("wire");
+    let mut connection = String::from("relayx");
     let mut tcp: Option<TcpStream> = None;
-    let mut config = load_config();
+    let mut config = load_config().unwrap_or_else(|e| {
+        printwarn(&format!(
+            "cant load your configuration: {e}. using default instead."
+        ));
+        Config::default()
+    });
     loop {
         print!("\x1b[1m{connection}>\x1b[0m ");
         io::stdout().flush().unwrap();
@@ -82,7 +82,7 @@ fn process_input(
             }
             println!("Connecting to {address_input_ref}...");
             let tcp_stream = TcpStream::connect(address_input_ref);
-            if let Err(e) = tcp_stream {
+            if let Err(_) = tcp_stream {
                 println!("Couldn't establish connection with server.");
                 return;
             }
@@ -141,12 +141,12 @@ fn process_input(
 
             let _ = tcp.as_ref().unwrap().shutdown(Shutdown::Both);
             connection.clear();
-            connection.push_str("wire");
+            connection.push_str("relayx");
             println!("Closed the connection.")
         }
         "set" => match args.as_slice() {
             [] => {
-                println!("Nothing to set.");
+                println!("Nothing to set. Type \x1b[1mlist\x1b[0m for options to set.");
             }
             [opt] => {
                 if let Some(option) = ConfigOption::parse(opt) {
@@ -182,18 +182,8 @@ fn process_input(
                     description: format!("{} milliseconds", config.read_timeout),
                 },
             ];
-            let mut table = Table::new(commands);
-            table.with(Remove::row(Rows::first()));
-            table.with(
-                Modify::new(Columns::first())
-                    .with(Format::content(|s| format!("\x1b[1m{s}\x1b[0m"))),
-            );
-            table.with(
-                Modify::new(Columns::one(1))
-                    .with(Format::content(|s| format!("\x1b[38;5;250m{s}\x1b[0m"))),
-            );
-            table.with(Style::blank());
-            println!("\n{table}\n");
+
+            println!("\n{}\n", print_table(commands));
         }
         "clear" => {
             print!("\x1B[2J\x1B[H");
@@ -237,18 +227,7 @@ fn process_input(
                     description: "Close Wire".to_string(),
                 },
             ];
-            let mut table = Table::new(commands);
-            table.with(Remove::row(Rows::first()));
-            table.with(
-                Modify::new(Columns::first())
-                    .with(Format::content(|s| format!("\x1b[1m{s}\x1b[0m"))),
-            );
-            table.with(
-                Modify::new(Columns::one(1))
-                    .with(Format::content(|s| format!("\x1b[38;5;250m{s}\x1b[0m"))),
-            );
-            table.with(Style::blank());
-            println!("\n{table}\n");
+            println!("\n{}\n", print_table(commands));
         }
         _ => {
             println!("Unknown input: {input}");

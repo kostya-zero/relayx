@@ -72,29 +72,27 @@ fn get_config_path() -> PathBuf {
         "windows" => {
             let appdata = var("LOCALAPPDATA").unwrap();
             Path::new(&appdata)
-                .join("wire-client.toml")
+                .join("relayx-client.toml")
                 .to_path_buf()
         }
         _ => {
             let home_dir = var("HOME").unwrap();
             Path::new(&home_dir)
                 .join(".config")
-                .join("wire-client.toml")
+                .join("relayx-client.toml")
                 .to_path_buf()
         }
     }
 }
 
-pub fn load_config() -> Config {
-    if let Ok(content) = fs::read_to_string(get_config_path()) {
-        toml::from_str::<Config>(&content).unwrap()
-    } else {
-        Config::default()
-    }
+pub fn load_config() -> Result<Config> {
+    let content = fs::read_to_string(get_config_path()).map_err(|e| anyhow!("failed to read configuration file content: {e}."))?;
+    let config = toml::from_str::<Config>(&content).map_err(|e| anyhow!("configuration file is broken: {e}."))?;
+    Ok(config)
 }
 
 pub fn save_config(cfg: Config) -> Result<()> {
     let ctx_str = toml::to_string(&cfg)?;
     fs::write(get_config_path(), ctx_str)
-        .map_err(|e| anyhow!("Failed to save context: {}", e.to_string()))
+        .map_err(|e| anyhow!("failed to save configuration: {}", e.to_string()))
 }

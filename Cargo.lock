@@ -106,6 +106,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "relayx"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "tabled",
+ "toml",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -238,14 +248,4 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74c7b26e3480b707944fc872477815d29a8e429d2f93a1ce000f5fa84a15cbcd"
 dependencies = [
  "memchr",
-]
-
-[[package]]
-name = "wire"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "serde",
- "tabled",
- "toml",
 ]
