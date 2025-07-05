@@ -67,7 +67,7 @@ impl ConfigOption {
     }
 }
 
-fn get_config_path() -> PathBuf {
+pub fn get_config_path() -> PathBuf {
     match std::env::consts::OS {
         "windows" => {
             let appdata = var("LOCALAPPDATA").unwrap();

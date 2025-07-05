@@ -1,17 +1,17 @@
-use crate::config::{load_config, save_config, Config, ConfigOption};
+use crate::config::{get_config_path, load_config, save_config, Config, ConfigOption};
+use crate::tables::{print_table, TableEntry};
 use crate::terminal::{printerr, printwarn};
+use anyhow::Result;
 use std::io;
 use std::io::{Read, Write};
 use std::net::{Shutdown, SocketAddrV4, TcpStream};
+use std::path::Path;
 use std::process::exit;
 use std::time::Duration;
-use crate::tables::{print_table, TableEntry};
 
 mod config;
-mod terminal;
 mod tables;
-
-
+mod terminal;
 
 fn is_valid_address(s: &str) -> bool {
     s.parse::<SocketAddrV4>().is_ok()
@@ -23,14 +23,25 @@ fn sanitize_input(input: String) -> String {
     sanitized.to_string()
 }
 
+fn check_env() -> Result<()> {
+    if !Path::new(&get_config_path()).exists() {
+        let default_config = Config::default();
+        save_config(default_config)?
+    }
+    Ok(())
+}
+
 fn main() {
     println!("Relayx TCP Client {}", env!("CARGO_PKG_VERSION"));
     println!("Enter ?/help to display help message.");
+    if let Err(e) = check_env() {
+        printwarn(&format!("failed to generate default configuration: {e}"));
+    }
     let mut connection = String::from("relayx");
     let mut tcp: Option<TcpStream> = None;
     let mut config = load_config().unwrap_or_else(|e| {
         printwarn(&format!(
-            "cant load your configuration: {e}. using default instead."
+            "cant load your configuration: {e} using default instead."
         ));
         Config::default()
     });
