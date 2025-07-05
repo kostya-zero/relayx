@@ -32,7 +32,7 @@ fn check_env() -> Result<()> {
 }
 
 fn main() {
-    println!("Relayx TCP Client {}", env!("CARGO_PKG_VERSION"));
+    println!("\x1b[1mRelayx {}\x1b[0m", env!("CARGO_PKG_VERSION"));
     println!("Enter ?/help to display help message.");
     if let Err(e) = check_env() {
         printwarn(&format!("failed to generate default configuration: {e}"));
@@ -72,6 +72,9 @@ fn process_input(
 
     match cmd.to_ascii_lowercase().as_str() {
         "open" => {
+            if tcp.is_some() {
+                printerr("you're already connected to another host. Perform a disconnect first.")
+            }
             let address_input: String;
             let address_input_ref: &str = if args.len() == 1 {
                 args[0]
@@ -84,17 +87,17 @@ fn process_input(
                 &address_input
             };
             if address_input_ref.is_empty() {
-                println!("Address is empty.");
+                printerr("address is empty.");
                 return;
             }
             if !is_valid_address(address_input_ref) {
-                println!("Given address is not a valid IP address.");
+                printerr("given address is not a valid IP address.");
                 return;
             }
             println!("Connecting to {address_input_ref}...");
             let tcp_stream = TcpStream::connect(address_input_ref);
             if let Err(_) = tcp_stream {
-                println!("Couldn't establish connection with server.");
+                printerr("couldn't establish connection with server.");
                 return;
             }
             connection.clear();
@@ -151,9 +154,10 @@ fn process_input(
             }
 
             let _ = tcp.as_ref().unwrap().shutdown(Shutdown::Both);
+            *tcp = None;
             connection.clear();
             connection.push_str("relayx");
-            println!("Closed the connection.")
+            println!("Closed the connection.");
         }
         "set" => match args.as_slice() {
             [] => {
@@ -163,7 +167,7 @@ fn process_input(
                 if let Some(option) = ConfigOption::parse(opt) {
                     option.print(config);
                 } else {
-                    println!("unknown option.");
+                    printerr("unknown option.");
                 }
             }
             [opt, val] => {
@@ -177,10 +181,10 @@ fn process_input(
                         printerr(&e.to_string());
                     }
                 } else {
-                    println!("unknown option.");
+                    printerr("unknown option.");
                 }
             }
-            _ => println!("Too many arguments."),
+            _ => printerr("Too many arguments."),
         },
         "list" => {
             let commands = vec![
@@ -201,8 +205,8 @@ fn process_input(
         }
         "exit" => {
             if tcp.is_some() {
+                println!("Shutting down current connection...");
                 let raw_tcp = tcp.as_ref().unwrap();
-                println!("{}", raw_tcp.peer_addr().unwrap());
                 let _ = raw_tcp.shutdown(Shutdown::Both);
             }
             exit(0);
@@ -235,7 +239,7 @@ fn process_input(
                 },
                 TableEntry {
                     name: "exit".to_string(),
-                    description: "Close Wire".to_string(),
+                    description: "Exit Relayx".to_string(),
                 },
             ];
             println!("\n{}\n", print_table(commands));
