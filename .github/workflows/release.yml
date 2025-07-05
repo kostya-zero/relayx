@@ -1,0 +1,56 @@
+﻿name: Build Binary
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            bin: relayx
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            bin: relayx
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin: relayx
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            bin: relayx
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            bin: relayx
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            bin: relayx
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: relayx.exe
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+      - name: Setup Rust Toolchain
+        uses: actions-rs/toolchain@v1.0.6
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+          components: clippy
+      - name: Install musl tools
+        if: contains(matrix.target, 'musl')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+      - name: Build Release Binary
+        run: cargo build --release
+      - name: Upload as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: relayx-${{ matrix.target }}
+          path: target/release/${{ matrix.bin }}
