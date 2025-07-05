@@ -1,5 +1,12 @@
 [package]
 name = "relayx"
+description = "A TCP client with shell-like interface."
+keywords = ["tcp", "client", "network", "shell"]
+repository = "https://github.com/kostya-zero/relayx"
+homepage = "https://github.com/kostya-zero/relayx"
+license = "MIT"
+authors = ["Konstantin Zhigaylo <zero@kostyazero.com>"]
+readme = "README.md"
 version = "0.1.0"
 edition = "2024"
 
@@ -8,3 +15,15 @@ anyhow = "1.0.98"
 serde = { version = "1.0.219", features = ["derive"] }
 tabled = "0.20.0"
 toml = "0.8.23"
+
+[profile.dev]
+incremental = false
+
+[profile.release]
+panic = "abort"
+opt-level = 3
+codegen-units = 1
+incremental = false
+lto = "thin"
+debug = 0
+strip = true
