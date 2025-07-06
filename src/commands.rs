@@ -147,6 +147,10 @@ pub fn handle_list(config: &mut Config) {
             name: "read_timeout".to_string(),
             description: format!("{} milliseconds", config.read_timeout),
         },
+        TableEntry {
+            name: "connection_timeout".to_string(),
+            description: format!("{} milliseconds", config.connection_timeout),
+        },
     ];
 
     println!("\n{}\n", print_table(commands));
