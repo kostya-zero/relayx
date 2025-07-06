@@ -61,7 +61,7 @@ fn process_input(
     let (cmd, args) = parse_command(input);
 
     match cmd.to_ascii_lowercase().as_str() {
-        "open" => handle_open(&args, tcp, connection),
+        "open" => handle_open(&args, tcp, connection, config),
         "send" => handle_send(&args, tcp, config),
         "close" => handle_close(tcp, connection),
         "set" => handle_set(&args, config),

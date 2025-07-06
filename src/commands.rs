@@ -2,14 +2,15 @@
 use crate::is_valid_address;
 use crate::terminal::{get_input, printerr};
 use std::io::{Read, Write};
-use std::net::{Shutdown, TcpStream};
+use std::net::{Shutdown, SocketAddr, TcpStream};
 use std::process::exit;
+use std::str::FromStr;
 use std::time::Duration;
 use crate::tables::{print_table, TableEntry};
 
-pub fn handle_open(args: &[&str], tcp: &mut Option<TcpStream>, connection: &mut String) {
+pub fn handle_open(args: &[&str], tcp: &mut Option<TcpStream>, connection: &mut String, config: &mut Config) {
     if tcp.is_some() {
-        printerr("you're already connected to another host. Perform a disconnect first.")
+        printerr("you're already connected to another host.")
     }
 
     let address_input: String;
@@ -31,8 +32,9 @@ pub fn handle_open(args: &[&str], tcp: &mut Option<TcpStream>, connection: &mut 
     }
 
     println!("Connecting to {address_input_ref}...");
+    let addr = SocketAddr::from_str(address_input_ref).unwrap();
 
-    let tcp_stream = TcpStream::connect(address_input_ref);
+    let tcp_stream = TcpStream::connect_timeout(&addr, Duration::from_millis(config.connection_timeout));
     if tcp_stream.is_err() {
         printerr("couldn't establish connection with server.");
         return;

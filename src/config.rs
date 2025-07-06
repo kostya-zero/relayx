@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 pub struct Config {
     pub wait_for_response: bool,
     pub read_timeout: u64,
+    pub connection_timeout: u64,
 }
 
 impl Default for Config {
@@ -15,6 +16,7 @@ impl Default for Config {
         Self {
             wait_for_response: true,
             read_timeout: 10000,
+            connection_timeout: 10000,
         }
     }
 }
@@ -22,6 +24,7 @@ impl Default for Config {
 pub enum ConfigOption {
     WaitForResponse,
     ReadTimeout,
+    ConnectionTimeout,
 }
 
 impl ConfigOption {
@@ -29,6 +32,7 @@ impl ConfigOption {
         match name {
             "wait_for_response" => Some(Self::WaitForResponse),
             "read_timeout" => Some(Self::ReadTimeout),
+            "connection_timeout" => Some(Self::ConnectionTimeout),
             _ => None,
         }
     }
@@ -42,6 +46,10 @@ impl ConfigOption {
             Self::ReadTimeout => println!(
                 "\x1b[3m\x1b[1mread_timeout\x1b[0m\nCurrent: {}.",
                 cfg.read_timeout
+            ),
+            Self::ConnectionTimeout => println!(
+                "\x1b[3m\x1b[1mconnection_timeout\x1b[0m\nCurrent: {}.",
+                cfg.connection_timeout
             ),
         }
     }
@@ -63,6 +71,10 @@ impl ConfigOption {
                 .parse::<u64>()
                 .map(|n| cfg.read_timeout = n)
                 .map_err(|_| anyhow!("invalid value for read_timeout")),
+            Self::ConnectionTimeout => val
+                .parse::<u64>()
+                .map(|n| cfg.connection_timeout = n)
+                .map_err(|_| anyhow!("invalid value for connection_timeout")),
         }
     }
 }
@@ -71,9 +83,7 @@ pub fn get_config_path() -> PathBuf {
     match std::env::consts::OS {
         "windows" => {
             let appdata = var("LOCALAPPDATA").unwrap();
-            Path::new(&appdata)
-                .join("relayx-client.toml")
-                .to_path_buf()
+            Path::new(&appdata).join("relayx-client.toml").to_path_buf()
         }
         _ => {
             let home_dir = var("HOME").unwrap();
@@ -86,8 +96,10 @@ pub fn get_config_path() -> PathBuf {
 }
 
 pub fn load_config() -> Result<Config> {
-    let content = fs::read_to_string(get_config_path()).map_err(|e| anyhow!("failed to read configuration file content: {e}."))?;
-    let config = toml::from_str::<Config>(&content).map_err(|e| anyhow!("configuration file is broken: {e}."))?;
+    let content = fs::read_to_string(get_config_path())
+        .map_err(|e| anyhow!("failed to read configuration file content: {e}."))?;
+    let config = toml::from_str::<Config>(&content)
+        .map_err(|e| anyhow!("configuration file is broken: {e}."))?;
     Ok(config)
 }
 
