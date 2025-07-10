@@ -15,13 +15,6 @@ cargo install relayx
 
 Download the latest release from the [GitHub releases page](https://github.com/kostya-zero/relayx/releases) that matches your platform.
 
-## Features
-
-- Interactive shell interface.
-- Connect to any TCP server.
-- Send and receive data.
-- Configurable options.
-
 ## Commands
 
 Relayx uses a simple command-based interface. Here are the available commands:
