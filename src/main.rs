@@ -1,5 +1,5 @@
 use crate::commands::*;
-use crate::config::{get_config_path, load_config, save_config, Config};
+use crate::config::{Config, get_config_path, load_config, save_config};
 use crate::terminal::{get_input, printwarn};
 use anyhow::Result;
 use std::net::{SocketAddrV4, TcpStream};
@@ -61,11 +61,11 @@ fn process_input(
     let (cmd, args) = parse_command(input);
 
     match cmd.to_ascii_lowercase().as_str() {
-        "open" => handle_open(&args, tcp, connection, config),
-        "send" => handle_send(&args, tcp, config),
+        "open" | "o" => handle_open(&args, tcp, connection, config),
+        "send" | "s" => handle_send(&args, tcp, config),
         "close" => handle_close(tcp, connection),
         "set" => handle_set(&args, config),
-        "list" => handle_list(config),
+        "list" | "ls" => handle_list(config),
         "clear" => handle_clear(),
         "exit" => handle_exit(tcp),
         "help" | "?" => handle_help(),

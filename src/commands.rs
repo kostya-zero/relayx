@@ -1,14 +1,19 @@
-﻿use crate::config::{save_config, Config, ConfigOption};
+﻿use crate::config::{Config, ConfigOption, save_config};
 use crate::is_valid_address;
+use crate::tables::{TableEntry, print_table};
 use crate::terminal::{get_input, printerr};
 use std::io::{Read, Write};
 use std::net::{Shutdown, SocketAddr, TcpStream};
 use std::process::exit;
 use std::str::FromStr;
 use std::time::Duration;
-use crate::tables::{print_table, TableEntry};
 
-pub fn handle_open(args: &[&str], tcp: &mut Option<TcpStream>, connection: &mut String, config: &mut Config) {
+pub fn handle_open(
+    args: &[&str],
+    tcp: &mut Option<TcpStream>,
+    connection: &mut String,
+    config: &mut Config,
+) {
     if tcp.is_some() {
         printerr("you're already connected to another host.")
     }
@@ -34,7 +39,8 @@ pub fn handle_open(args: &[&str], tcp: &mut Option<TcpStream>, connection: &mut 
     println!("Connecting to {address_input_ref}...");
     let addr = SocketAddr::from_str(address_input_ref).unwrap();
 
-    let tcp_stream = TcpStream::connect_timeout(&addr, Duration::from_millis(config.connection_timeout));
+    let tcp_stream =
+        TcpStream::connect_timeout(&addr, Duration::from_millis(config.connection_timeout));
     if tcp_stream.is_err() {
         printerr("couldn't establish connection with server.");
         return;
@@ -172,11 +178,11 @@ pub fn handle_exit(tcp: &mut Option<TcpStream>) {
 pub fn handle_help() {
     let commands = vec![
         TableEntry {
-            name: "open".to_string(),
+            name: "open, o".to_string(),
             description: "Open a new TCP connection".to_string(),
         },
         TableEntry {
-            name: "send".to_string(),
+            name: "send, s".to_string(),
             description: "Send a message".to_string(),
         },
         TableEntry {
@@ -188,7 +194,7 @@ pub fn handle_help() {
             description: "Set configuration options".to_string(),
         },
         TableEntry {
-            name: "list".to_string(),
+            name: "list, ls".to_string(),
             description: "List current configuration.".to_string(),
         },
         TableEntry {
@@ -202,3 +208,4 @@ pub fn handle_help() {
     ];
     println!("\n{}\n", print_table(commands));
 }
+
