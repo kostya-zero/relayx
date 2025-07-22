@@ -15,7 +15,8 @@ pub fn handle_open(
     config: &mut Config,
 ) {
     if tcp.is_some() {
-        printerr("you're already connected to another host.")
+        printerr("you're already connected to another host.");
+        return;
     }
 
     let address_input: String;
