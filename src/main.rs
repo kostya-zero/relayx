@@ -69,6 +69,6 @@ fn process_input(
         "clear" => handle_clear(),
         "exit" => handle_exit(tcp),
         "help" | "?" => handle_help(),
-        _ => println!("Unknown input: {input}"),
+        _ => println!("Unknown command: {cmd}"),
     }
 }
