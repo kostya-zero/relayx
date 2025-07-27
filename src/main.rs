@@ -4,6 +4,7 @@ use crate::terminal::{get_input, printwarn};
 use anyhow::Result;
 use std::net::{SocketAddrV4, TcpStream};
 use std::path::Path;
+use terminal::printerr;
 
 mod commands;
 mod config;
@@ -27,15 +28,14 @@ fn main() {
         "\x1b[1mRelayx {}\x1b[0m\nEnter ?/help to display help message.",
         env!("CARGO_PKG_VERSION")
     );
-    if let Err(e) = check_env() {
-        printwarn(&format!("failed to generate default configuration: {e}"));
+    if check_env().is_err() {
+        printwarn("could not generate default configuration due to file system error.");
     }
     let mut connection = String::from("relayx");
     let mut tcp: Option<TcpStream> = None;
     let mut config = load_config().unwrap_or_else(|e| {
-        printwarn(&format!(
-            "cant load your configuration: {e} using default instead."
-        ));
+        printerr(&format!("cant load your configuration: {e}."));
+        printwarn("using default configuration instead.");
         Config::default()
     });
     loop {
