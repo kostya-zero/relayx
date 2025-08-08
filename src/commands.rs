@@ -1,7 +1,7 @@
 ﻿use crate::config::{Config, ConfigOption, save_config};
 use crate::is_valid_address;
 use crate::tables::{TableEntry, print_table};
-use crate::terminal::{get_input, printerr};
+use crate::terminal::{get_input, print_done, print_error};
 use std::io::{Read, Write};
 use std::net::{Shutdown, SocketAddr, TcpStream};
 use std::process::exit;
@@ -15,7 +15,7 @@ pub fn handle_open(
     config: &mut Config,
 ) {
     if tcp.is_some() {
-        printerr("you're already connected to another host.");
+        print_error("you're already connected to another host.");
         return;
     }
 
@@ -28,12 +28,12 @@ pub fn handle_open(
     };
 
     if address_input_ref.is_empty() {
-        printerr("address is empty.");
+        print_error("address is empty.");
         return;
     }
 
     if !is_valid_address(address_input_ref) {
-        printerr("given address is not a valid IP address.");
+        print_error("given address is not a valid IP address.");
         return;
     }
 
@@ -43,14 +43,15 @@ pub fn handle_open(
     let tcp_stream =
         TcpStream::connect_timeout(&addr, Duration::from_millis(config.connection_timeout));
     if tcp_stream.is_err() {
-        printerr("couldn't establish connection with server.");
+        print_error("couldn't establish connection with server.");
         return;
     }
 
     connection.clear();
     connection.push_str(address_input_ref);
     *tcp = Some(tcp_stream.unwrap());
-    println!("Connected successfully.");
+    config.recent_connection = address_input_ref.to_string();
+    print_done("Connection established");
 }
 
 pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Config) {
@@ -71,12 +72,12 @@ pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Conf
     let mut stream = tcp.as_ref().unwrap();
     let result = stream.write(message_input_ref.as_bytes());
     if result.is_err() {
-        printerr("failed to send message to TCP stream.");
+        print_error("failed to send message to TCP stream.");
         return;
     }
 
     if !config.wait_for_response {
-        println!("Sent.");
+        print_done("Message sent successfully.");
         return;
     }
 
@@ -84,7 +85,7 @@ pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Conf
     let _ = stream.set_read_timeout(Some(Duration::from_millis(config.read_timeout)));
     let read_result = stream.read(&mut buf);
     if read_result.is_err() {
-        printerr("failed to read the response, but message was sent.");
+        print_error("failed to read the response, but message was sent.");
         return;
     }
     let n = read_result.unwrap();
@@ -115,7 +116,7 @@ pub fn handle_set(args: &[&str], config: &mut Config) {
         let opt = args[0];
         match ConfigOption::parse(opt) {
             Some(option) => option.print(config),
-            None => printerr("unknown option."),
+            None => print_error("unknown option."),
         }
         return;
     }
@@ -126,22 +127,22 @@ pub fn handle_set(args: &[&str], config: &mut Config) {
         let option = match ConfigOption::parse(opt) {
             Some(option) => option,
             None => {
-                printerr("unknown option.");
+                print_error("unknown option.");
                 return;
             }
         };
 
         if let Err(e) = option.set(config, val) {
-            printerr(&e.to_string());
+            print_error(&e.to_string());
             return;
         }
         if let Err(e) = save_config(config.clone()) {
-            printerr(&e.to_string());
+            print_error(&e.to_string());
         }
         return;
     }
 
-    printerr("Too many arguments.");
+    print_error("Too many arguments.");
 }
 
 pub fn handle_list(config: &mut Config) {
@@ -209,4 +210,3 @@ pub fn handle_help() {
     ];
     println!("\n{}\n", print_table(commands));
 }
-

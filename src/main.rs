@@ -1,10 +1,10 @@
 use crate::commands::*;
 use crate::config::{Config, get_config_path, load_config, save_config};
-use crate::terminal::{get_input, printwarn};
+use crate::terminal::{get_input, print_warn};
 use anyhow::Result;
 use std::net::{SocketAddrV4, TcpStream};
 use std::path::Path;
-use terminal::printerr;
+use terminal::print_error;
 
 mod commands;
 mod config;
@@ -29,13 +29,13 @@ fn main() {
         env!("CARGO_PKG_VERSION")
     );
     if check_env().is_err() {
-        printwarn("could not generate default configuration due to file system error.");
+        print_warn("could not generate default configuration due to file system error.");
     }
     let mut connection = String::from("relayx");
     let mut tcp: Option<TcpStream> = None;
     let mut config = load_config().unwrap_or_else(|e| {
-        printerr(&format!("cant load your configuration: {e}."));
-        printwarn("using default configuration instead.");
+        print_error(&format!("cant load your configuration: {e}."));
+        print_warn("using default configuration instead.");
         Config::default()
     });
     loop {
