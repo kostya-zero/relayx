@@ -27,7 +27,6 @@ pub enum ConfigOption {
     WaitForResponse,
     ReadTimeout,
     ConnectionTimeout,
-    RecentConnection,
 }
 
 impl ConfigOption {
@@ -36,7 +35,6 @@ impl ConfigOption {
             "wait_for_response" => Some(Self::WaitForResponse),
             "read_timeout" => Some(Self::ReadTimeout),
             "connection_timeout" => Some(Self::ConnectionTimeout),
-            "recent_connection" => Some(Self::RecentConnection),
             _ => None,
         }
     }
@@ -55,12 +53,6 @@ impl ConfigOption {
                 "\x1b[3m\x1b[1mconnection_timeout\x1b[0m\nCurrent: {}.",
                 cfg.connection_timeout
             ),
-            Self::RecentConnection => {
-                println!(
-                    "\x1b[3m\x1b[1mrecent_connection\x1b[0m\nCurrent: {}.",
-                    cfg.recent_connection
-                );
-            }
         }
     }
 
@@ -85,10 +77,6 @@ impl ConfigOption {
                 .parse::<u64>()
                 .map(|n| cfg.connection_timeout = n)
                 .map_err(|_| anyhow!("invalid value for connection_timeout")),
-            Self::RecentConnection => {
-                cfg.recent_connection = val.to_string();
-                Ok(())
-            }
         }
     }
 }
