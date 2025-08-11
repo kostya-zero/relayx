@@ -1,7 +1,7 @@
 use crate::commands::*;
 use crate::config::{Config, get_config_path, load_config, save_config};
 use crate::terminal::{get_input, print_warn};
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use std::net::{SocketAddrV4, TcpStream};
 use std::path::Path;
 use terminal::print_error;
@@ -60,7 +60,7 @@ fn process_input(
 ) {
     let (cmd, args) = parse_command(input);
 
-    match cmd.to_ascii_lowercase().as_str() {
+    let res = match cmd.to_ascii_lowercase().as_str() {
         "open" | "o" => handle_open(&args, tcp, connection, config),
         "send" | "s" => handle_send(&args, tcp, config),
         "close" => handle_close(tcp, connection),
@@ -69,6 +69,10 @@ fn process_input(
         "clear" => handle_clear(),
         "exit" => handle_exit(tcp),
         "help" | "?" => handle_help(),
-        _ => println!("Unknown command: {cmd}"),
+        _ => Err(anyhow!("Unknown command: {cmd}")),
+    };
+
+    if let Err(e) = res {
+        print_error(&e.to_string());
     }
 }

@@ -1,4 +1,6 @@
-﻿use crate::config::{Config, ConfigOption, save_config};
+﻿use anyhow::{Result, anyhow};
+
+use crate::config::{Config, ConfigOption, save_config};
 use crate::is_valid_address;
 use crate::tables::{TableEntry, print_table};
 use crate::terminal::{get_input, print_done, print_error};
@@ -13,10 +15,9 @@ pub fn handle_open(
     tcp: &mut Option<TcpStream>,
     connection: &mut String,
     config: &mut Config,
-) {
+) -> Result<()> {
     if tcp.is_some() {
-        print_error("you're already connected to another host.");
-        return;
+        return Err(anyhow!("you're already connected to another host."));
     }
 
     let address_input: String;
@@ -28,13 +29,11 @@ pub fn handle_open(
     };
 
     if address_input_ref.is_empty() {
-        print_error("address is empty.");
-        return;
+        return Err(anyhow!("address is empty."));
     }
 
     if !is_valid_address(address_input_ref) {
-        print_error("given address is not a valid IP address.");
-        return;
+        return Err(anyhow!("invalid address format"));
     }
 
     println!("Connecting to {address_input_ref}...");
@@ -43,8 +42,7 @@ pub fn handle_open(
     let tcp_stream =
         TcpStream::connect_timeout(&addr, Duration::from_millis(config.connection_timeout));
     if tcp_stream.is_err() {
-        print_error("couldn't establish connection with server.");
-        return;
+        return Err(anyhow!("failed to connect to server"));
     }
 
     connection.clear();
@@ -52,12 +50,14 @@ pub fn handle_open(
     *tcp = Some(tcp_stream.unwrap());
     config.recent_connection = address_input_ref.to_string();
     print_done("Connection established");
+    Ok(())
 }
 
-pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Config) {
+pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Config) -> Result<()> {
     if tcp.is_none() {
-        println!("Connection is not established.");
-        return;
+        return Err(anyhow!(
+            "Connection not established. Use 'open' command first."
+        ));
     }
 
     let message_input: String;
@@ -72,53 +72,53 @@ pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Conf
     let mut stream = tcp.as_ref().unwrap();
     let result = stream.write(message_input_ref.as_bytes());
     if result.is_err() {
-        print_error("failed to send message to TCP stream.");
-        return;
+        return Err(anyhow!("failed to send message"));
     }
 
     if !config.wait_for_response {
         print_done("Message sent successfully.");
-        return;
+        return Ok(());
     }
 
     let mut buf = vec![0u8; 1024];
     let _ = stream.set_read_timeout(Some(Duration::from_millis(config.read_timeout)));
     let read_result = stream.read(&mut buf);
     if read_result.is_err() {
-        print_error("failed to read the response, but message was sent.");
-        return;
+        return Err(anyhow!(
+            "failed to read the response, but message was sent."
+        ));
     }
     let n = read_result.unwrap();
     let response = String::from_utf8_lossy(&buf[..n]);
     println!("{response}");
+    Ok(())
 }
 
-pub fn handle_close(tcp: &mut Option<TcpStream>, connection: &mut String) {
+pub fn handle_close(tcp: &mut Option<TcpStream>, connection: &mut String) -> Result<()> {
     if tcp.is_none() {
-        println!("No active connection.");
-        return;
+        return Err(anyhow!("No active connection."));
     }
 
     let _ = tcp.as_ref().unwrap().shutdown(Shutdown::Both);
     *tcp = None;
     connection.clear();
     connection.push_str("relayx");
-    println!("Closed the connection.");
+    print_done("Closed the connection.");
+    Ok(())
 }
 
-pub fn handle_set(args: &[&str], config: &mut Config) {
+pub fn handle_set(args: &[&str], config: &mut Config) -> Result<()> {
     if args.is_empty() {
-        println!("Nothing to set. Type \x1b[1mlist\x1b[0m for options to set.");
-        return;
+        return Err(anyhow!("No arguments provided."));
     }
 
     if args.len() == 1 {
         let opt = args[0];
         match ConfigOption::parse(opt) {
             Some(option) => option.print(config),
-            None => print_error("unknown option."),
+            None => return Err(anyhow!("unknown option.")),
         }
-        return;
+        return Ok(());
     }
 
     if args.len() == 2 {
@@ -128,24 +128,24 @@ pub fn handle_set(args: &[&str], config: &mut Config) {
             Some(option) => option,
             None => {
                 print_error("unknown option.");
-                return;
+                return Err(anyhow!("unknown option"));
             }
         };
 
         if let Err(e) = option.set(config, val) {
-            print_error(&e.to_string());
-            return;
+            return Err(anyhow!("{}", e.to_string()));
         }
         if let Err(e) = save_config(config.clone()) {
             print_error(&e.to_string());
+            return Err(anyhow!("{}", e.to_string()));
         }
-        return;
+        return Ok(());
     }
 
-    print_error("Too many arguments.");
+    return Err(anyhow!("too many arguments"));
 }
 
-pub fn handle_list(config: &mut Config) {
+pub fn handle_list(config: &mut Config) -> Result<()> {
     let commands = vec![
         TableEntry {
             name: "wait_for_response".to_string(),
@@ -162,22 +162,25 @@ pub fn handle_list(config: &mut Config) {
     ];
 
     println!("\n{}\n", print_table(commands));
+    Ok(())
 }
 
-pub fn handle_clear() {
+pub fn handle_clear() -> Result<()> {
     print!("\x1B[2J\x1B[H");
+    Ok(())
 }
 
-pub fn handle_exit(tcp: &mut Option<TcpStream>) {
+pub fn handle_exit(tcp: &mut Option<TcpStream>) -> Result<()> {
     if tcp.is_some() {
         println!("Shutting down current connection...");
         let raw_tcp = tcp.as_ref().unwrap();
         let _ = raw_tcp.shutdown(Shutdown::Both);
     }
     exit(0);
+    Ok(())
 }
 
-pub fn handle_help() {
+pub fn handle_help() -> Result<()> {
     let commands = vec![
         TableEntry {
             name: "open, o".to_string(),
@@ -209,4 +212,5 @@ pub fn handle_help() {
         },
     ];
     println!("\n{}\n", print_table(commands));
+    Ok(())
 }
