@@ -2,8 +2,9 @@ use crate::commands::*;
 use crate::config::{Config, get_config_path, load_config, save_config};
 use crate::terminal::{get_input, print_warn};
 use anyhow::{Result, anyhow};
-use std::net::{SocketAddrV4, TcpStream};
+use std::net::{Shutdown, SocketAddrV4, TcpStream};
 use std::path::Path;
+use std::process::exit;
 use terminal::print_error;
 
 mod commands;
@@ -60,6 +61,15 @@ fn process_input(
 ) {
     let (cmd, args) = parse_command(input);
 
+    if cmd.to_ascii_lowercase().as_str() == "exit" {
+        if tcp.is_some() {
+            println!("Shutting down current connection...");
+            let raw_tcp = tcp.as_ref().unwrap();
+            let _ = raw_tcp.shutdown(Shutdown::Both);
+        }
+        exit(0);
+    }
+
     let res = match cmd.to_ascii_lowercase().as_str() {
         "open" | "o" => handle_open(&args, tcp, connection, config),
         "send" | "s" => handle_send(&args, tcp, config),
@@ -67,7 +77,6 @@ fn process_input(
         "set" => handle_set(&args, config),
         "list" | "ls" => handle_list(config),
         "clear" => handle_clear(),
-        "exit" => handle_exit(tcp),
         "help" | "?" => handle_help(),
         _ => Err(anyhow!("Unknown command: {cmd}")),
     };

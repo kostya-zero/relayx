@@ -170,16 +170,6 @@ pub fn handle_clear() -> Result<()> {
     Ok(())
 }
 
-pub fn handle_exit(tcp: &mut Option<TcpStream>) -> Result<()> {
-    if tcp.is_some() {
-        println!("Shutting down current connection...");
-        let raw_tcp = tcp.as_ref().unwrap();
-        let _ = raw_tcp.shutdown(Shutdown::Both);
-    }
-    exit(0);
-    Ok(())
-}
-
 pub fn handle_help() -> Result<()> {
     let commands = vec![
         TableEntry {
