@@ -21,15 +21,22 @@ pub fn handle_open(
     }
 
     let address_input: String;
-    let address_input_ref: &str = if args.len() == 1 {
+    let mut address_input_ref: &str = if args.len() == 1 {
         args[0]
     } else {
         address_input = get_input("address");
         &address_input
     };
 
-    if address_input_ref.is_empty() {
+    if address_input_ref.is_empty() && config.recent_connection.is_empty() {
         return Err(anyhow!("address is empty."));
+    }
+
+    if address_input_ref.is_empty() {
+        if config.recent_connection.is_empty() {
+            return Err(anyhow!("no recent connection available."));
+        }
+        address_input_ref = &config.recent_connection;
     }
 
     if !is_valid_address(address_input_ref) {
