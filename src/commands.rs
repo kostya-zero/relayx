@@ -3,10 +3,9 @@
 use crate::config::{Config, ConfigOption, save_config};
 use crate::is_valid_address;
 use crate::tables::{TableEntry, print_table};
-use crate::terminal::{get_input, print_done, print_error};
+use crate::terminal::{get_input, get_progress_bar, print_done, print_error};
 use std::io::{Read, Write};
 use std::net::{Shutdown, SocketAddr, TcpStream};
-use std::process::exit;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -17,7 +16,7 @@ pub fn handle_open(
     config: &mut Config,
 ) -> Result<()> {
     if tcp.is_some() {
-        return Err(anyhow!("you're already connected to another host."));
+        return Err(anyhow!("You're already connected to another host."));
     }
 
     let address_input: String;
@@ -29,29 +28,33 @@ pub fn handle_open(
     };
 
     if address_input_ref.is_empty() && config.recent_connection.is_empty() {
-        return Err(anyhow!("address is empty."));
+        return Err(anyhow!("Address is empty."));
     }
 
     if address_input_ref.is_empty() {
         if config.recent_connection.is_empty() {
-            return Err(anyhow!("no recent connection available."));
+            return Err(anyhow!("No recent connection available."));
         }
         address_input_ref = &config.recent_connection;
     }
 
     if !is_valid_address(address_input_ref) {
-        return Err(anyhow!("invalid address format"));
+        return Err(anyhow!("Invalid address format"));
     }
 
-    println!("Connecting to {address_input_ref}...");
+    let progress = get_progress_bar();
+    progress.set_message("Connecting...");
+    progress.enable_steady_tick(Duration::from_millis(100));
     let addr = SocketAddr::from_str(address_input_ref).unwrap();
 
     let tcp_stream =
         TcpStream::connect_timeout(&addr, Duration::from_millis(config.connection_timeout));
     if tcp_stream.is_err() {
-        return Err(anyhow!("failed to connect to server"));
+        progress.finish_and_clear();
+        return Err(anyhow!("Failed to connect to server"));
     }
 
+    progress.finish_and_clear();
     connection.clear();
     connection.push_str(address_input_ref);
     *tcp = Some(tcp_stream.unwrap());
@@ -77,26 +80,35 @@ pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Conf
     };
 
     let mut stream = tcp.as_ref().unwrap();
+    let progress = get_progress_bar();
+    progress.set_message("Sending...");
+    progress.enable_steady_tick(Duration::from_millis(100));
     let result = stream.write(message_input_ref.as_bytes());
     if result.is_err() {
-        return Err(anyhow!("failed to send message"));
+        progress.finish_and_clear();
+        return Err(anyhow!("Failed to send message"));
     }
 
     if !config.wait_for_response {
+        progress.finish_and_clear();
         print_done("Message sent successfully.");
         return Ok(());
     }
 
+    progress.set_message("Receiving...");
     let mut buf = vec![0u8; 1024];
     let _ = stream.set_read_timeout(Some(Duration::from_millis(config.read_timeout)));
     let read_result = stream.read(&mut buf);
     if read_result.is_err() {
+        progress.finish_and_clear();
         return Err(anyhow!(
-            "failed to read the response, but message was sent."
+            "Failed to read the response, but message was sent."
         ));
     }
     let n = read_result.unwrap();
     let response = String::from_utf8_lossy(&buf[..n]);
+
+    progress.finish_and_clear();
     println!("{response}");
     Ok(())
 }
@@ -123,7 +135,7 @@ pub fn handle_set(args: &[&str], config: &mut Config) -> Result<()> {
         let opt = args[0];
         match ConfigOption::parse(opt) {
             Some(option) => option.print(config),
-            None => return Err(anyhow!("unknown option.")),
+            None => return Err(anyhow!("Unknown option.")),
         }
         return Ok(());
     }
@@ -134,8 +146,7 @@ pub fn handle_set(args: &[&str], config: &mut Config) -> Result<()> {
         let option = match ConfigOption::parse(opt) {
             Some(option) => option,
             None => {
-                print_error("unknown option.");
-                return Err(anyhow!("unknown option"));
+                return Err(anyhow!("Unknown option"));
             }
         };
 
@@ -143,13 +154,12 @@ pub fn handle_set(args: &[&str], config: &mut Config) -> Result<()> {
             return Err(anyhow!("{}", e.to_string()));
         }
         if let Err(e) = save_config(config.clone()) {
-            print_error(&e.to_string());
             return Err(anyhow!("{}", e.to_string()));
         }
         return Ok(());
     }
 
-    return Err(anyhow!("too many arguments"));
+    Err(anyhow!("Too many arguments"))
 }
 
 pub fn handle_list(config: &mut Config) -> Result<()> {
