@@ -3,7 +3,7 @@
 use crate::config::{Config, ConfigOption, save_config};
 use crate::is_valid_address;
 use crate::tables::{TableEntry, print_table};
-use crate::terminal::{get_input, get_progress_bar, print_done, print_error};
+use crate::terminal::{get_input, get_progress_bar, print_done};
 use std::io::{Read, Write};
 use std::net::{Shutdown, SocketAddr, TcpStream};
 use std::str::FromStr;

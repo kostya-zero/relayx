@@ -1,18 +1,18 @@
 ﻿use std::io;
 use std::io::Write;
-
+use colored::Colorize;
 use indicatif::ProgressBar;
 
 pub fn print_error(msg: &str) {
-    eprintln!(" \x1b[91m\x1b[1mError\x1b[0m: {msg}")
+    eprintln!(" {}: {msg}", "error".bold().red())
 }
 
 pub fn print_warn(msg: &str) {
-    eprintln!(" \x1b[93m\x1b[1m⚠\x1b[0m {msg}")
+    println!(" {}: {msg}", "warn".bold().yellow())
 }
 
 pub fn print_done(msg: &str) {
-    println!(" \x1b[92m\x1b[1m✓\x1b[0m {msg}")
+    println!(" {} {msg}", "✓".green().bold())
 }
 
 pub fn get_progress_bar() -> ProgressBar {
