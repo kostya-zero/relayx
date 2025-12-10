@@ -2,7 +2,8 @@ use crate::commands::*;
 use crate::config::{Config, get_config_path, load_config, save_config};
 use crate::terminal::{get_input, print_warn};
 use anyhow::{Result, anyhow};
-use std::net::{Shutdown, SocketAddrV4, TcpStream};
+use std::io::Write;
+use std::net::{Shutdown, TcpStream, ToSocketAddrs};
 use std::path::Path;
 use std::process::exit;
 use terminal::print_error;
@@ -13,7 +14,7 @@ mod tables;
 mod terminal;
 
 fn is_valid_address(s: &str) -> bool {
-    s.parse::<SocketAddrV4>().is_ok()
+    s.to_socket_addrs().is_ok()
 }
 
 fn check_env() -> Result<()> {
@@ -25,10 +26,6 @@ fn check_env() -> Result<()> {
 }
 
 fn main() {
-    println!(
-        "\x1b[1mRelayx {}\x1b[0m\nEnter ?/help to display help message.",
-        env!("CARGO_PKG_VERSION")
-    );
     if check_env().is_err() {
         print_warn("could not generate default configuration due to file system error.");
     }
@@ -39,10 +36,20 @@ fn main() {
         print_warn("using default configuration instead.");
         Config::default()
     });
+    println!(
+        "\x1b[1mRelayx {}\x1b[0m\nEnter ?/help to display help message.",
+        env!("CARGO_PKG_VERSION")
+    );
     loop {
         print!("\x1b[1m{connection}>\x1b[0m ");
+        let _ = std::io::stdout().flush();
         let input = get_input("");
-        process_input(&input, &mut connection, &mut tcp, &mut config);
+        if input.is_empty() {
+            continue;
+        }
+        if let Err(e) = process_input(&input, &mut connection, &mut tcp, &mut config) {
+            print_error(&e.to_string());
+        }
     }
 }
 
@@ -58,19 +65,18 @@ fn process_input(
     connection: &mut String,
     tcp: &mut Option<TcpStream>,
     config: &mut Config,
-) {
+) -> Result<()> {
     let (cmd, args) = parse_command(input);
 
     if cmd.to_ascii_lowercase().as_str() == "exit" {
-        if tcp.is_some() {
+        if let Some(stream) = tcp.take() {
             println!("Shutting down current connection...");
-            let raw_tcp = tcp.as_ref().unwrap();
-            let _ = raw_tcp.shutdown(Shutdown::Both);
+            let _ = stream.shutdown(Shutdown::Both);
         }
         exit(0);
     }
 
-    let res = match cmd.to_ascii_lowercase().as_str() {
+    match cmd.to_ascii_lowercase().as_str() {
         "open" | "o" => handle_open(&args, tcp, connection, config),
         "send" | "s" => handle_send(&args, tcp, config),
         "close" => handle_close(tcp, connection),
@@ -78,10 +84,7 @@ fn process_input(
         "list" | "ls" => handle_list(config),
         "clear" => handle_clear(),
         "help" | "?" => handle_help(),
+        "" => Ok(()),
         _ => Err(anyhow!("Unknown command: {cmd}")),
-    };
-
-    if let Err(e) = res {
-        print_error(&e.to_string());
     }
 }
