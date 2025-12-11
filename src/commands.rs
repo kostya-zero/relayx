@@ -102,7 +102,7 @@ pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Conf
     if read_result.is_err() {
         progress.finish_and_clear();
         return Err(anyhow!(
-            "Failed to read the response, but message was sent."
+            "failed to read the response, but message was sent."
         ));
     }
     let n = read_result.unwrap();
@@ -163,18 +163,21 @@ pub fn handle_set(args: &[&str], config: &mut Config) -> Result<()> {
 }
 
 pub fn handle_list(config: &mut Config) -> Result<()> {
+    let wait_for_response_desc = &format!("{}", config.wait_for_response);
+    let read_timeout_desc = &format!("{} milliseconds", config.read_timeout);
+    let connection_timeout_desc = &format!("{} milliseconds", config.connection_timeout);
     let commands = vec![
         TableEntry {
-            name: "wait_for_response".to_string(),
-            description: format!("{}", config.wait_for_response),
+            name: "wait_for_response",
+            description: wait_for_response_desc,
         },
         TableEntry {
-            name: "read_timeout".to_string(),
-            description: format!("{} milliseconds", config.read_timeout),
+            name: "read_timeout",
+            description: read_timeout_desc,
         },
         TableEntry {
-            name: "connection_timeout".to_string(),
-            description: format!("{} milliseconds", config.connection_timeout),
+            name: "connection_timeout",
+            description: connection_timeout_desc,
         },
     ];
 
@@ -190,32 +193,32 @@ pub fn handle_clear() -> Result<()> {
 pub fn handle_help() -> Result<()> {
     let commands = vec![
         TableEntry {
-            name: "open, o".to_string(),
-            description: "Open a new TCP connection".to_string(),
+            name: "open, o",
+            description: "Open a new TCP connection",
         },
         TableEntry {
-            name: "send, s".to_string(),
-            description: "Send a message".to_string(),
+            name: "send, s",
+            description: "Send a message",
         },
         TableEntry {
-            name: "close".to_string(),
-            description: "Close current connection".to_string(),
+            name: "close",
+            description: "Close current connection",
         },
         TableEntry {
-            name: "set".to_string(),
-            description: "Set configuration options".to_string(),
+            name: "set",
+            description: "Set configuration options",
         },
         TableEntry {
-            name: "list, ls".to_string(),
-            description: "List current configuration.".to_string(),
+            name: "list, ls",
+            description: "List current configuration.",
         },
         TableEntry {
-            name: "clear".to_string(),
-            description: "Clear the console screen".to_string(),
+            name: "clear",
+            description: "Clear the console screen",
         },
         TableEntry {
-            name: "exit".to_string(),
-            description: "Exit Relayx".to_string(),
+            name: "exit",
+            description: "Exit Relayx",
         },
     ];
     println!("\n{}\n", print_table(commands));

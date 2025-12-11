@@ -36,10 +36,13 @@ fn main() {
         print_warn("using default configuration instead.");
         Config::default()
     });
+
+    let program_title = format!("Relayx {}", env!("CARGO_PKG_VERSION"));
     println!(
-        "\x1b[1mRelayx {}\x1b[0m\nEnter ?/help to display help message.",
-        env!("CARGO_PKG_VERSION")
+        "\x1b[1m{}\x1b[0m\nEnter ?/help to display help message.",
+        program_title
     );
+
     loop {
         print!("\x1b[1m{connection}>\x1b[0m ");
         let _ = std::io::stdout().flush();

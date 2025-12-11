@@ -7,7 +7,7 @@ homepage = "https://github.com/kostya-zero/relayx"
 license = "MIT"
 authors = ["Konstantin Zhigaylo <zero@kostyazero.com>"]
 readme = "README.md"
-version = "0.1.0"
+version = "0.2.0-dev"
 edition = "2024"
 
 [dependencies]
