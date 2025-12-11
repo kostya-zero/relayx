@@ -144,12 +144,8 @@ pub fn handle_set(args: &[&str], config: &mut Config) -> Result<()> {
             None => bail!("unknown option"),
         };
 
-        if let Err(e) = option.set(config, val) {
-            bail!("{e}")
-        }
-        if let Err(e) = save_config(config.clone()) {
-            bail!("{e}")
-        }
+        option.set(config, val).map_err(|e| anyhow!("{e}"))?;
+        save_config(config).map_err(|e| anyhow!("{e}"))?;
         return Ok(());
     }
 

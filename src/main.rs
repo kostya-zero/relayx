@@ -23,7 +23,7 @@ fn is_valid_address(s: &str) -> bool {
 fn check_env() -> Result<()> {
     if !Path::new(&get_config_path()).exists() {
         let default_config = Config::default();
-        save_config(default_config)?
+        save_config(&default_config)?
     }
     Ok(())
 }

@@ -105,7 +105,7 @@ pub fn load_config() -> Result<Config> {
     Ok(config)
 }
 
-pub fn save_config(cfg: Config) -> Result<()> {
-    let ctx_str = toml::to_string(&cfg)?;
+pub fn save_config(cfg: &Config) -> Result<()> {
+    let ctx_str = toml::to_string(cfg)?;
     fs::write(get_config_path(), ctx_str).map_err(|e| anyhow!("failed to save configuration: {e}"))
 }

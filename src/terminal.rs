@@ -3,6 +3,8 @@ use indicatif::ProgressBar;
 use std::io;
 use std::io::Write;
 
+use crate::macros::print_stdout;
+
 pub fn print_error(msg: &str) {
     eprintln!(" {}: {msg}", "error".bold().red())
 }
@@ -25,9 +27,8 @@ pub fn get_progress_bar() -> ProgressBar {
 
 pub fn get_input(msg: &str) -> String {
     if !msg.is_empty() {
-        print!("( {msg} ): ");
+        print_stdout!("( {msg} ): ");
     }
-    io::stdout().flush().unwrap();
     let mut temp = String::new();
     io::stdin().read_line(&mut temp).unwrap();
     temp.strip_suffix("\n").unwrap().trim().to_string()
