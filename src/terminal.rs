@@ -1,7 +1,7 @@
-﻿use std::io;
-use std::io::Write;
-use colored::Colorize;
+﻿use colored::Colorize;
 use indicatif::ProgressBar;
+use std::io;
+use std::io::Write;
 
 pub fn print_error(msg: &str) {
     eprintln!(" {}: {msg}", "error".bold().red())

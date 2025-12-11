@@ -1,7 +1,9 @@
 use crate::commands::*;
 use crate::config::{Config, get_config_path, load_config, save_config};
+use crate::macros::print_stdout;
 use crate::terminal::{get_input, print_warn};
 use anyhow::{Result, anyhow};
+use colored::Colorize;
 use std::io::Write;
 use std::net::{Shutdown, TcpStream, ToSocketAddrs};
 use std::path::Path;
@@ -10,6 +12,7 @@ use terminal::print_error;
 
 mod commands;
 mod config;
+mod macros;
 mod tables;
 mod terminal;
 
@@ -39,13 +42,12 @@ fn main() {
 
     let program_title = format!("Relayx {}", env!("CARGO_PKG_VERSION"));
     println!(
-        "\x1b[1m{}\x1b[0m\nEnter ?/help to display help message.",
-        program_title
+        "{}\nEnter ?/help to display help message.",
+        program_title.bold()
     );
 
     loop {
-        print!("\x1b[1m{connection}>\x1b[0m ");
-        let _ = std::io::stdout().flush();
+        print_stdout!("\x1b[1m{connection}>\x1b[0m ");
         let input = get_input("");
         if input.is_empty() {
             continue;
