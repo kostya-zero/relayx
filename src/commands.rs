@@ -151,10 +151,10 @@ pub fn handle_set(args: &[&str], config: &mut Config) -> Result<()> {
         };
 
         if let Err(e) = option.set(config, val) {
-            return Err(anyhow!("{}", e.to_string()));
+            return Err(anyhow!("{e}"));
         }
         if let Err(e) = save_config(config.clone()) {
-            return Err(anyhow!("{}", e.to_string()));
+            return Err(anyhow!("{e}"));
         }
         return Ok(());
     }
