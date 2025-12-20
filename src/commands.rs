@@ -1,9 +1,9 @@
-﻿use anyhow::{Result, anyhow, bail};
+use anyhow::{Result, anyhow, bail};
 
 use crate::config::{Config, ConfigOption, save_config};
 use crate::is_valid_address;
 use crate::tables::{TableEntry, print_table};
-use crate::terminal::{get_input, get_progress_bar, print_done};
+use crate::terminal::{get_input, get_progress_bar, print_done, Shell};
 use std::io::{Read, Write};
 use std::net::{Shutdown, SocketAddr, TcpStream};
 use std::str::FromStr;
@@ -14,6 +14,7 @@ pub fn handle_open(
     tcp: &mut Option<TcpStream>,
     connection: &mut String,
     config: &mut Config,
+    shell: &mut Shell,
 ) -> Result<()> {
     if tcp.is_some() {
         bail!("you're already connected to another host")
@@ -23,7 +24,7 @@ pub fn handle_open(
     let mut address_input_ref: &str = if args.len() == 1 {
         args[0]
     } else {
-        address_input = get_input("address");
+        address_input = get_input(shell, "address");
         &address_input
     };
 
@@ -63,7 +64,12 @@ pub fn handle_open(
     Ok(())
 }
 
-pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Config) -> Result<()> {
+pub fn handle_send(
+    args: &[&str],
+    tcp: &mut Option<TcpStream>,
+    config: &mut Config,
+    shell: &mut Shell,
+) -> Result<()> {
     if tcp.is_none() {
         bail!("open a connection first");
     }
@@ -73,7 +79,7 @@ pub fn handle_send(args: &[&str], tcp: &mut Option<TcpStream>, config: &mut Conf
         message_input = args.join(" ");
         &message_input
     } else {
-        message_input = get_input("message");
+        message_input = get_input(shell, "message");
         &message_input
     };
 

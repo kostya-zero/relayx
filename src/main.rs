@@ -1,10 +1,8 @@
 use crate::commands::*;
 use crate::config::{Config, get_config_path, load_config, save_config};
-use crate::macros::print_stdout;
-use crate::terminal::{get_input, print_warn};
+use crate::terminal::{Shell, print_warn};
 use anyhow::{Result, anyhow};
 use colored::Colorize;
-use std::io::Write;
 use std::net::{Shutdown, TcpStream, ToSocketAddrs};
 use std::path::Path;
 use std::process::exit;
@@ -12,7 +10,6 @@ use terminal::print_error;
 
 mod commands;
 mod config;
-mod macros;
 mod tables;
 mod terminal;
 
@@ -39,6 +36,7 @@ fn main() {
         print_warn("using default configuration instead.");
         Config::default()
     });
+    let mut shell = Shell::new();
 
     let program_title = format!("Relayx {}", env!("CARGO_PKG_VERSION"));
     println!(
@@ -47,12 +45,18 @@ fn main() {
     );
 
     loop {
-        print_stdout!("\x1b[1m{connection}>\x1b[0m ");
-        let input = get_input("");
-        if input.is_empty() {
+        let prompt = format!("{connection}>");
+        let input = match shell.read_line(&prompt) {
+            Some(line) => line,
+            None => {
+                println!();
+                break;
+            }
+        };
+        if input.trim().is_empty() {
             continue;
         }
-        if let Err(e) = process_input(&input, &mut connection, &mut tcp, &mut config) {
+        if let Err(e) = process_input(&input, &mut connection, &mut tcp, &mut config, &mut shell) {
             print_error(&e.to_string());
         }
     }
@@ -70,6 +74,7 @@ fn process_input(
     connection: &mut String,
     tcp: &mut Option<TcpStream>,
     config: &mut Config,
+    shell: &mut Shell,
 ) -> Result<()> {
     let (cmd, args) = parse_command(input);
 
@@ -82,8 +87,8 @@ fn process_input(
     }
 
     match cmd.to_ascii_lowercase().as_str() {
-        "open" | "o" => handle_open(&args, tcp, connection, config),
-        "send" | "s" => handle_send(&args, tcp, config),
+        "open" | "o" => handle_open(&args, tcp, connection, config, shell),
+        "send" | "s" => handle_send(&args, tcp, config, shell),
         "close" => handle_close(tcp, connection),
         "set" => handle_set(&args, config),
         "list" | "ls" => handle_list(config),
